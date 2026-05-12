@@ -2,9 +2,10 @@ import type { Translations } from './en';
 
 export const ptBR: Translations = {
     languages: {
-        en: 'English',
-        fr: 'Français',
-        'pt-BR': 'Português (Brasil)'
+        en: 'Inglês',
+        fr: 'Francês',
+        'pt-BR': 'Português (Brasil)',
+        'zh-TW': 'Chinês Tradicional'
     },
     common: {
         ok: 'OK',

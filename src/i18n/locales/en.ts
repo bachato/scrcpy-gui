@@ -5,7 +5,8 @@ export const en = {
     languages: {
         en: 'English',
         fr: 'Français',
-        'pt-BR': 'Português (Brasil)'
+        'pt-BR': 'Português (Brasil)',
+        'zh-TW': 'Traditional Chinese'
     },
     common: {
         ok: 'OK',
