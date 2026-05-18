@@ -6,6 +6,7 @@ export const ru: Translations = {
     en: 'English',
     fr: 'Français',
     'pt-BR': 'Português (Brasil)',
+    'zh-CN': '简体中文',
     'zh-TW': '繁體中文',
     ru: 'Русский',
   },
