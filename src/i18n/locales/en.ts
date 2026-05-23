@@ -5,6 +5,7 @@ export const en = {
     languages: { en: 'English',
         fr: 'Français',
         'pt-BR': 'Português (Brasil)',
+        'zh-CN': 'Simplified Chinese',
         'zh-TW': 'Traditional Chinese', ru: 'Русский' },
     common: {
         ok: 'OK',
@@ -282,4 +283,3 @@ export const en = {
 };
 
 export type Translations = typeof en;
-

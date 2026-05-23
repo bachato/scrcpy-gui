@@ -4,6 +4,7 @@ export const ptBR: Translations = {
     languages: { en: 'Inglês',
         fr: 'Francês',
         'pt-BR': 'Português (Brasil)',
+        'zh-CN': 'Chinês Simplificado',
         'zh-TW': 'Chinês Tradicional', ru: 'Русский' },
     common: {
         ok: 'OK',
@@ -279,4 +280,3 @@ export const ptBR: Translations = {
         commandFailed: '[ERROR] Comando falhou: {error}'
     }
 };
-

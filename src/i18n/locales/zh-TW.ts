@@ -4,6 +4,7 @@ export const zhTW: Translations = {
     languages: { en: 'English',
         fr: 'Français',
         'pt-BR': 'Português (Brasil)',
+        'zh-CN': '簡體中文',
         'zh-TW': '繁體中文', ru: 'Русский' },
     common: {
         ok: '確定',
@@ -279,4 +280,3 @@ export const zhTW: Translations = {
         commandFailed: '[錯誤] 指令失敗：{error}'
     }
 };
-

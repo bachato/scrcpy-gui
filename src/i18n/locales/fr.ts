@@ -4,6 +4,7 @@ export const fr: Translations = {
     languages: { en: 'Anglais',
         fr: 'Français',
         'pt-BR': 'Portugais (Brésil)',
+        'zh-CN': 'Chinois simplifié',
         'zh-TW': 'Chinois traditionnel', ru: 'Русский' },
     common: {
         ok: 'OK',
@@ -279,4 +280,3 @@ export const fr: Translations = {
         commandFailed: '[ERROR] La commande a échoué : {error}'
     }
 };
-
