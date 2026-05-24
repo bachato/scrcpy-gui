@@ -9,13 +9,6 @@
   <img width="850" alt="ScrcpyGUI Interface" src="https://github.com/user-attachments/assets/a416fcd3-295a-4a01-8769-6f9da429b028" />
 </p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/version-4.0.0-blue.svg?style=flat-square" alt="Version">
-  <img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License">
-  <a href="https://www.patreon.com/cw/KB_kilObit">
-    <img src="https://img.shields.io/badge/Support-Patreon-orange.svg?style=flat-square" alt="Patreon">
-  </a>
-</p>
 
 ---
 
