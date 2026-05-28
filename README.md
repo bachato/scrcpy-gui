@@ -63,6 +63,21 @@ To learn how to enable **USB Debugging**, set up **Wireless Pairing**, or instal
 2. `npm run tauri dev` (Development)
 3. `npm run tauri build` (Production)
 
+## ❄️ NixOS Installation (flakes)
+
+To install it permanently with a desktop launcher, add the flake to your system's `flake.nix`:
+
+```nix
+inputs.scrcpy-gui.url = "github:kil0bit-kb/scrcpy-gui";
+```
+
+Then add it to your system packages:
+
+```nix
+environment.systemPackages = [
+  inputs.scrcpy-gui.packages.${pkgs.system}.default
+];
+```
 ---
 
 ## 💖 Support the Project
