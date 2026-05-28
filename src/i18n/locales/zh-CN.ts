@@ -7,7 +7,8 @@ export const zhCN: Translations = {
         'pt-BR': 'Português (Brasil)',
         'zh-CN': '简体中文',
         'zh-TW': '繁體中文',
-        ru: 'Русский'
+        ru: 'Русский',
+        id: 'Bahasa Indonesia'
     },
     common: {
         ok: '确定',

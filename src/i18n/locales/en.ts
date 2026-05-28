@@ -6,7 +6,8 @@ export const en = {
         fr: 'Français',
         'pt-BR': 'Português (Brasil)',
         'zh-CN': 'Simplified Chinese',
-        'zh-TW': 'Traditional Chinese', ru: 'Русский' },
+        'zh-TW': 'Traditional Chinese', ru: 'Русский',
+        id: 'Bahasa Indonesia' },
     common: {
         ok: 'OK',
         cancel: 'Cancel',

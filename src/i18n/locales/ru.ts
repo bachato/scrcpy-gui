@@ -9,6 +9,7 @@ export const ru: Translations = {
     'zh-CN': '简体中文',
     'zh-TW': '繁體中文',
     ru: 'Русский',
+    id: 'Bahasa Indonesia',
   },
 
   common: {

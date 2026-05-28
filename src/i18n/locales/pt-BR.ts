@@ -5,7 +5,7 @@ export const ptBR: Translations = {
         fr: 'Francês',
         'pt-BR': 'Português (Brasil)',
         'zh-CN': 'Chinês Simplificado',
-        'zh-TW': 'Chinês Tradicional', ru: 'Русский' },
+        'zh-TW': 'Chinês Tradicional', ru: 'Русский', id: 'Bahasa Indonesia' },
     common: {
         ok: 'OK',
         cancel: 'Cancelar',

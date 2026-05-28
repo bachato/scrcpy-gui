@@ -5,7 +5,7 @@ export const fr: Translations = {
         fr: 'Français',
         'pt-BR': 'Portugais (Brésil)',
         'zh-CN': 'Chinois simplifié',
-        'zh-TW': 'Chinois traditionnel', ru: 'Русский' },
+        'zh-TW': 'Chinois traditionnel', ru: 'Русский', id: 'Bahasa Indonesia' },
     common: {
         ok: 'OK',
         cancel: 'Annuler',

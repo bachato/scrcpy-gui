@@ -5,7 +5,7 @@ export const zhTW: Translations = {
         fr: 'Français',
         'pt-BR': 'Português (Brasil)',
         'zh-CN': '簡體中文',
-        'zh-TW': '繁體中文', ru: 'Русский' },
+        'zh-TW': '繁體中文', ru: 'Русский', id: 'Bahasa Indonesia' },
     common: {
         ok: '確定',
         cancel: '取消',
