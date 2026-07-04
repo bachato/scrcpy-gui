@@ -54,4 +54,26 @@ describe('Sidebar Component', () => {
         fireEvent.click(screen.getByText('Wireless'));
         expect(screen.getByText('Wireless Setup Tip')).toBeInTheDocument();
     });
+
+    it('renders mdns discovered devices and calls onConnect when clicked', () => {
+        const mdnsProps = {
+            ...mockProps,
+            mdnsDevices: [
+                { name: 'DiscoveredPhone', service: '_adb-tls-connect._tcp', address: '192.168.0.104:44321' }
+            ]
+        };
+        render(<Sidebar {...mdnsProps} />);
+
+        // Switch to Wireless tab to see it
+        fireEvent.click(screen.getByText('Wireless'));
+        expect(screen.getByText(/DiscoveredPhone/)).toBeInTheDocument();
+
+        // Click the connect button next to/on the discovered device
+        const connectBtn = screen.getByText(/DiscoveredPhone/).closest('button');
+        expect(connectBtn).toBeInTheDocument();
+        if (connectBtn) {
+            fireEvent.click(connectBtn);
+            expect(mockProps.onConnect).toHaveBeenCalledWith('192.168.0.104:44321');
+        }
+    });
 });

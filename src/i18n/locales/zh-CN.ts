@@ -89,6 +89,7 @@ export const zhCN: Translations = {
         connect: '连接',
         connecting: '连接中...',
         recentDevices: '最近设备',
+        discoveredDevices: '已发现的设备 (mDNS)',
         clear: '清除',
         pairDeviceTitle: '2. 配对设备 (Android 11+)',
         ipPortPlaceholder: 'IP:端口',

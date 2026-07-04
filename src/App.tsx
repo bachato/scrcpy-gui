@@ -43,6 +43,7 @@ function App() {
     clearLogs,
     detectedCameras,
     renderDriverSupport,
+    mdnsDevices,
     config,
     setConfig,
     theme,
@@ -332,6 +333,7 @@ function App() {
                     onFilePush={handleFileBrowse}
                     historyDevices={historyDevices}
                     clearHistory={clearHistory}
+                    mdnsDevices={mdnsDevices}
                   />
                 </div>
               </div>
