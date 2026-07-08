@@ -3,6 +3,16 @@ import { Smartphone, RefreshCw, Usb, Wifi, UploadCloud, Zap } from 'lucide-react
 import { useI18n } from '../i18n';
 import { MdnsDevice } from '../hooks/useScrcpy';
 
+// mDNS wireless-debugging serials look like
+// "adb-<serial>-<random>._adb-tls-connect._tcp" (optionally with an mDNS
+// conflict suffix, e.g. "... (2)._adb-tls-connect._tcp"). That is the real adb
+// serial (still needed for -s), just unreadable as a label, so strip the mDNS
+// protocol boilerplate for display only.
+function formatDeviceLabel(serial: string): string {
+    const match = serial.match(/^adb-(.+?)( \(\d+\))?\._adb-tls-connect\._(tcp|udp)$/);
+    return match ? `${match[1]}${match[2] ?? ''}` : serial;
+}
+
 export interface SidebarProps {
     devices: string[];
     runningDevices: string[];
@@ -97,7 +107,7 @@ export default function Sidebar({
                                             <Smartphone size={14} />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className={`text-[11px] font-bold truncate tracking-tight ${isSelected ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>{d}</p>
+                                            <p className={`text-[11px] font-bold truncate tracking-tight ${isSelected ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>{formatDeviceLabel(d)}</p>
                                             <div className="flex items-center gap-2 mt-0.5">
                                                 {isRunning ? (
                                                     <span className="flex items-center gap-1">

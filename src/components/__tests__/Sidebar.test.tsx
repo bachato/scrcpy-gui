@@ -76,4 +76,16 @@ describe('Sidebar Component', () => {
             expect(mockProps.onConnect).toHaveBeenCalledWith('192.168.0.104:44321');
         }
     });
+
+    it('shows a clean label for an mDNS wireless-debugging serial, but keeps the full serial for selection', () => {
+        const mdnsSerial = 'adb-VWGE5XZHOBAIAAJN-thoiAU._adb-tls-connect._tcp';
+        const onSelectDevice = vi.fn();
+        render(<Sidebar {...mockProps} devices={[mdnsSerial]} runningDevices={[]} onSelectDevice={onSelectDevice} />);
+
+        expect(screen.getByText('VWGE5XZHOBAIAAJN-thoiAU')).toBeInTheDocument();
+        expect(screen.queryByText(mdnsSerial)).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('VWGE5XZHOBAIAAJN-thoiAU'));
+        expect(onSelectDevice).toHaveBeenCalledWith(mdnsSerial);
+    });
 });
