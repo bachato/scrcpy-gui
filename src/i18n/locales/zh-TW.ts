@@ -85,6 +85,7 @@ export const zhTW: Translations = {
         connect: '連線',
         connecting: '連線中...',
         recentDevices: '最近裝置',
+        discoveredDevices: '已偵測的裝置 (mDNS)',
         clear: '清除',
         pairDeviceTitle: '2. 配對裝置 (Android 11+)',
         ipPortPlaceholder: 'IP:Port',

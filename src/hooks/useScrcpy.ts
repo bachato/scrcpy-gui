@@ -14,6 +14,12 @@ export interface RenderDriverSupport {
     supportedDrivers: RenderDriverOption[];
 }
 
+export interface MdnsDevice {
+    name: string;
+    service: string;
+    address: string;
+}
+
 export interface ScrcpyConfig {
     device: string;
     sessionMode: string;
@@ -74,7 +80,8 @@ export function useScrcpy() {
     });
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
-    // Removed mdnsDevices state
+    const [mdnsDevices, setMdnsDevices] = useState<MdnsDevice[]>([]);
+    const attemptedConnectionsRef = useRef<Set<string>>(new Set());
     const [theme, setTheme] = useState("ultraviolet");
     const [colorMode, setColorModeState] = useState<'light' | 'dark' | 'system'>(() => {
         try {
@@ -275,11 +282,17 @@ export function useScrcpy() {
     const refreshDevices = async (customPath?: string, silent: boolean = false) => {
         if (isRefreshing) return;
         setIsRefreshing(true);
+
+        if (!silent) {
+            attemptedConnectionsRef.current.clear();
+        }
+
         try {
             const res: any = await invoke('get_devices', { customPath: customPath || config.scrcpyPath });
+            let newDevices: string[] = [];
 
             if (!res.error) {
-                const newDevices = res.devices as string[];
+                newDevices = res.devices as string[];
                 const prevDevices = prevDevicesRef.current;
 
                 // Identify connections/disconnections
@@ -306,6 +319,46 @@ export function useScrcpy() {
                 }
             } else {
                 setLogs(prev => [...prev.slice(-100), t('logs.discoveryError', { error: res.error })]);
+            }
+
+            // Fetch wireless devices broadcasting on the network via mDNS
+            try {
+                const mdnsRes: any = await invoke('get_mdns_devices', { customPath: customPath || config.scrcpyPath });
+                if (mdnsRes && !mdnsRes.error && mdnsRes.services) {
+                    const parsedMdns = (mdnsRes.services as any[]).filter(s => s.service && s.service.includes('_adb-tls-connect'));
+                    setMdnsDevices(parsedMdns);
+
+                    // Auto-connect to discovered but unconnected devices if option is enabled
+                    if (isAutoConnect) {
+                        for (const dev of parsedMdns) {
+                            const addr = dev.address;
+                            if (!newDevices.includes(addr) && !attemptedConnectionsRef.current.has(addr)) {
+                                attemptedConnectionsRef.current.add(addr);
+                                setLogs(prev => [...prev.slice(-100), `[Auto-Connect] Discovered wireless device at ${addr}, connecting...`]);
+
+                                invoke('adb_connect', { ip: addr, customPath: customPath || config.scrcpyPath })
+                                    .then((connectRes: any) => {
+                                        if (connectRes && connectRes.success) {
+                                            setLogs(prev => [...prev.slice(-100), `[Auto-Connect] Successfully connected to ${addr}`]);
+                                            setTimeout(() => {
+                                                refreshDevices(customPath || config.scrcpyPath, true);
+                                            }, 1000);
+                                        } else {
+                                            setLogs(prev => [...prev.slice(-100), `[Auto-Connect] Failed to connect to ${addr}: ${connectRes?.message || 'unknown error'}`]);
+                                        }
+                                    })
+                                    .catch(err => {
+                                        setLogs(prev => [...prev.slice(-100), `[Auto-Connect] Error connecting to ${addr}: ${String(err)}`]);
+                                    });
+                            }
+                        }
+                    }
+                } else if (mdnsRes && mdnsRes.error) {
+                    console.warn("[ADB MDNS] Failed to get mdns devices:", mdnsRes.message);
+                    setMdnsDevices([]);
+                }
+            } catch (mdnsErr) {
+                console.error("Failed to query mDNS devices:", mdnsErr);
             }
         } catch (e) {
             console.error(e);
@@ -582,6 +635,7 @@ export function useScrcpy() {
         detectedCameras,
         renderDriverSupport,
         isRefreshing,
+        mdnsDevices,
         config,
         setConfig,
         theme,

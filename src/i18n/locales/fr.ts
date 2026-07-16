@@ -85,6 +85,7 @@ export const fr: Translations = {
         connect: 'Connecter',
         connecting: '...',
         recentDevices: 'Appareils Récents',
+        discoveredDevices: 'Appareils Découverts (mDNS)',
         clear: 'Effacer',
         pairDeviceTitle: '2. Appairer l\'Appareil (Android 11+)',
         ipPortPlaceholder: 'IP:Port',

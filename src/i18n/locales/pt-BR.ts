@@ -85,6 +85,7 @@ export const ptBR: Translations = {
         connect: 'Conectar',
         connecting: '...',
         recentDevices: 'Dispositivos Recentes',
+        discoveredDevices: 'Dispositivos Descobertos (mDNS)',
         clear: 'Limpar',
         pairDeviceTitle: '2. Parear Dispositivo (Android 11+)',
         ipPortPlaceholder: 'IP:Porta',

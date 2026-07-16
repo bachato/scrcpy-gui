@@ -87,6 +87,7 @@ export const en = {
         connect: 'Connect',
         connecting: '...',
         recentDevices: 'Recent Devices',
+        discoveredDevices: 'Discovered Devices (mDNS)',
         clear: 'Clear',
         pairDeviceTitle: '2. Pair Device (Android 11+)',
         ipPortPlaceholder: 'IP:Port',

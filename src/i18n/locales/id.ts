@@ -89,6 +89,7 @@ export const id: Translations = {
         connect: 'Sambungkan',
         connecting: '...',
         recentDevices: 'Perangkat Terbaru',
+        discoveredDevices: 'Perangkat Ditemukan (mDNS)',
         clear: 'Hapus',
         pairDeviceTitle: '2. Pairing Perangkat (Android 11+)',
         ipPortPlaceholder: 'IP:Port',

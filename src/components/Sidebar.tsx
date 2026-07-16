@@ -1,6 +1,7 @@
 import React from 'react';
 import { Smartphone, RefreshCw, Usb, Wifi, UploadCloud, Zap } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { MdnsDevice } from '../hooks/useScrcpy';
 
 export interface SidebarProps {
     devices: string[];
@@ -18,6 +19,7 @@ export interface SidebarProps {
     // History props
     historyDevices?: string[];
     clearHistory?: () => void;
+    mdnsDevices?: MdnsDevice[];
 }
 
 export default function Sidebar({
@@ -34,7 +36,8 @@ export default function Sidebar({
     isRefreshing,
     onFilePush,
     historyDevices = [],
-    clearHistory = () => { }
+    clearHistory = () => { },
+    mdnsDevices = []
 }: SidebarProps) {
     const { t } = useI18n();
     const [activeTab, setActiveTab] = React.useState<'usb' | 'wireless'>('usb');
@@ -195,6 +198,40 @@ export default function Sidebar({
                                 </div>
 
                             </div>
+
+                            {/* Discovered Devices (mDNS) */}
+                            {mdnsDevices && mdnsDevices.filter(dev => !devices.includes(dev.address)).length > 0 && (
+                                <div className="space-y-3 pt-1">
+                                    <div className="flex items-center justify-between border-b border-zinc-800/50 pb-1.5">
+                                        <span className="text-[9px] font-black uppercase text-primary/60 tracking-widest">{t('sidebar.discoveredDevices')}</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {mdnsDevices
+                                            .filter(dev => !devices.includes(dev.address))
+                                            .map((dev, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    disabled={isRefreshing}
+                                                    onClick={() => {
+                                                        setConnectIp(dev.address);
+                                                        handleConnect(dev.address);
+                                                    }}
+                                                    className="w-full flex items-center justify-between p-2 rounded-lg bg-zinc-800/20 border border-zinc-800/50 hover:bg-zinc-800/50 hover:border-zinc-700 transition-all group text-left"
+                                                >
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <Wifi size={10} className="text-zinc-500 group-hover:text-zinc-300 shrink-0" />
+                                                        <span className="text-[10px] font-bold text-zinc-400 group-hover:text-zinc-200 truncate" title={`${dev.name} (${dev.address})`}>
+                                                            {dev.name} ({dev.address})
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-[8px] text-primary opacity-0 group-hover:opacity-100 uppercase font-black tracking-tighter shrink-0 ml-2">
+                                                        {t('sidebar.connect')}
+                                                    </div>
+                                                </button>
+                                            ))}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Recent Devices History */}
                             {historyDevices.length > 0 && (
