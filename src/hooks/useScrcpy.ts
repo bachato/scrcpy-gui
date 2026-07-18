@@ -401,6 +401,29 @@ export function useScrcpy() {
         }
     };
 
+    // Refs so the interval below always calls the latest closures without
+    // being torn down and recreated every render (which would reset its
+    // timing and, more subtly, could stack overlapping adb calls).
+    const isRefreshingRef = useRef(isRefreshing);
+    useEffect(() => { isRefreshingRef.current = isRefreshing; }, [isRefreshing]);
+    const fetchDevicesOnceRef = useRef(fetchDevicesOnce);
+    useEffect(() => { fetchDevicesOnceRef.current = fetchDevicesOnce; });
+
+    // Keep the hub in sync on its own so a device pairing, reconnecting, or
+    // dropping off doesn't require a manual refresh to notice. This calls
+    // fetchDevicesOnce() directly rather than refreshDevices(), so it never
+    // toggles isRefreshing (no "Syncing..." flicker or buttons disabling
+    // every few seconds) and never fires while a manual refresh or the
+    // settle-poll above is already in flight. It also pauses while the
+    // window is hidden, since there's nothing to update on screen anyway.
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (document.visibilityState === 'hidden' || isRefreshingRef.current) return;
+            fetchDevicesOnceRef.current(undefined, true);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
     const runScrcpy = async (config: ScrcpyConfig) => {
         try {
             setLogs(prev => [...prev.slice(-100), t('logs.initializingScrcpy', { device: config.device })]);
