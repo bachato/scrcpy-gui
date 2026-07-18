@@ -282,10 +282,13 @@ pub async fn get_mdns_devices(custom_path: Option<String>) -> serde_json::Value 
 }
 
 #[tauri::command]
-pub async fn adb_connect(window: Window, ip: String, custom_path: Option<String>) -> Result<serde_json::Value, String> {
+pub async fn adb_connect(window: Window, ip: String, custom_path: Option<String>, silent: Option<bool>) -> Result<serde_json::Value, String> {
+    let silent = silent.unwrap_or(false);
     let adb_path = get_binary_path("adb", custom_path);
-    let _ = window.emit("scrcpy-log", format!("[SYSTEM] Attempting wireless connection to {}...", ip));
-    
+    if !silent {
+        let _ = window.emit("scrcpy-log", format!("[SYSTEM] Attempting wireless connection to {}...", ip));
+    }
+
     let child = create_command(&adb_path)
         .arg("connect")
         .arg(&ip)
@@ -301,17 +304,21 @@ pub async fn adb_connect(window: Window, ip: String, custom_path: Option<String>
         Ok(Ok(output)) => {
             let out_text = String::from_utf8_lossy(&output.stdout).trim().to_string();
             let err_text = String::from_utf8_lossy(&output.stderr).trim().to_string();
-            
-            // Log everything to terminal for visibility
-            if !out_text.is_empty() { let _ = window.emit("scrcpy-log", format!("[ADB] {}", out_text)); }
-            if !err_text.is_empty() { let _ = window.emit("scrcpy-log", format!("[ADB ERROR] {}", err_text)); }
+
+            if !silent {
+                // Log everything to terminal for visibility
+                if !out_text.is_empty() { let _ = window.emit("scrcpy-log", format!("[ADB] {}", out_text)); }
+                if !err_text.is_empty() { let _ = window.emit("scrcpy-log", format!("[ADB ERROR] {}", err_text)); }
+            }
 
             let success = output.status.success() && !out_text.contains("cannot connect") && !out_text.contains("failed");
             Ok(json!({ "success": success, "message": if out_text.is_empty() { err_text } else { out_text } }))
         }
         Ok(Err(e)) => Err(e.to_string()),
         Err(_) => {
-            let _ = window.emit("scrcpy-log", format!("[SYSTEM] Connection to {} timed out after 5s.", ip));
+            if !silent {
+                let _ = window.emit("scrcpy-log", format!("[SYSTEM] Connection to {} timed out after 5s.", ip));
+            }
             Ok(json!({ "success": false, "message": "connection timed out" }))
         }
     }

@@ -424,6 +424,33 @@ export function useScrcpy() {
         return () => clearInterval(interval);
     }, []);
 
+    // Legacy ADB-over-network devices (a plain ip:port from the manual "IP
+    // Connect" field, e.g. an Android TV/set-top box on `adb tcpip`) have no
+    // persistent trust the way wireless debugging's TLS pairing does -- adb
+    // doesn't remember them at all once its server restarts or the
+    // connection drops, so nothing reconnects them the way a paired phone
+    // reconnects on its own over mDNS. Retry anything already in "Recent
+    // Devices" but not currently in the hub, quietly, once on mount and then
+    // every 25s. Unlike the removed client-side auto-connect, this only ever
+    // targets addresses the user has already connected to themselves before,
+    // never anything freshly discovered -- and it calls adb_connect directly
+    // rather than through connectDevice(), so a device that's simply offline
+    // doesn't spam the log with a failure every 25 seconds; a successful
+    // reconnect still surfaces normally through the next device-list poll.
+    useEffect(() => {
+        const tryReconnectHistory = () => {
+            if (document.visibilityState === 'hidden') return;
+            historyDevices.forEach(ip => {
+                if (!prevDevicesRef.current.includes(ip)) {
+                    invoke('adb_connect', { ip, customPath: config.scrcpyPath, silent: true }).catch(() => { });
+                }
+            });
+        };
+        tryReconnectHistory();
+        const interval = setInterval(tryReconnectHistory, 25000);
+        return () => clearInterval(interval);
+    }, [historyDevices, config.scrcpyPath]);
+
     const runScrcpy = async (config: ScrcpyConfig) => {
         try {
             setLogs(prev => [...prev.slice(-100), t('logs.initializingScrcpy', { device: config.device })]);
