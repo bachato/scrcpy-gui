@@ -88,7 +88,6 @@ export const ru: Translations = {
     wirelessSetupTipWirelessDebugging: 'Беспроводную отладку',
     wirelessSetupTipTextAfter: '.',
     ipConnect: 'Подключение по IP',
-    auto: 'Авто',
     ipPlaceholder: '192.168.x.x:5555',
     connect: 'Подключить',
     connecting: '...',

@@ -84,7 +84,6 @@ export const zhCN: Translations = {
         wirelessSetupTipWirelessDebugging: '无线调试',
         wirelessSetupTipTextAfter: '。',
         ipConnect: 'IP 连接',
-        auto: '自动',
         ipPlaceholder: '192.168.x.x:5555',
         connect: '连接',
         connecting: '连接中...',

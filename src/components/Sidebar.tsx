@@ -247,7 +247,7 @@ export default function Sidebar({
                                 </p>
                             </div>
                             <div className="space-y-3">
-                                <div className="flex items-center justify-between border-b border-zinc-800/50 pb-1.5">
+                                <div className="border-b border-zinc-800/50 pb-1.5">
                                     <span className="text-[9px] font-black uppercase text-zinc-500 tracking-widest">{t('sidebar.ipConnect')}</span>
                                 </div>
 

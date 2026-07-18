@@ -84,7 +84,6 @@ export const id: Translations = {
         wirelessSetupTipWirelessDebugging: 'Debugging Nirkabel',
         wirelessSetupTipTextAfter: '.',
         ipConnect: 'Sambung via IP',
-        auto: 'Otomatis',
         ipPlaceholder: '192.168.x.x:5555',
         connect: 'Sambungkan',
         connecting: '...',

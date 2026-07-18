@@ -80,7 +80,6 @@ export const ptBR: Translations = {
         wirelessSetupTipWirelessDebugging: 'Depuração Sem Fio',
         wirelessSetupTipTextAfter: '.',
         ipConnect: 'Conexão IP',
-        auto: 'Auto',
         ipPlaceholder: '192.168.x.x:5555',
         connect: 'Conectar',
         connecting: '...',

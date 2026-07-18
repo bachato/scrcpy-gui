@@ -82,7 +82,6 @@ export const en = {
         wirelessSetupTipWirelessDebugging: 'Wireless Debugging',
         wirelessSetupTipTextAfter: '.',
         ipConnect: 'IP Connect',
-        auto: 'Auto',
         ipPlaceholder: '192.168.x.x:5555',
         connect: 'Connect',
         connecting: '...',

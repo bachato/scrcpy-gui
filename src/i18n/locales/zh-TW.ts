@@ -80,7 +80,6 @@ export const zhTW: Translations = {
         wirelessSetupTipWirelessDebugging: '無線偵錯',
         wirelessSetupTipTextAfter: '。',
         ipConnect: 'IP 連線',
-        auto: '自動',
         ipPlaceholder: '192.168.x.x:5555',
         connect: '連線',
         connecting: '連線中...',

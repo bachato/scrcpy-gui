@@ -127,6 +127,7 @@ export function useScrcpy() {
         vsync: true
     });
     const prevDevicesRef = useRef<string[]>([]);
+    const mdnsDevicesRef = useRef<MdnsDevice[]>([]);
 
     useEffect(() => {
 
@@ -240,7 +241,12 @@ export function useScrcpy() {
             } else if (data.type === 'download-complete') {
                 setIsDownloading(false);
                 setStatus(t('logs.downloadComplete'));
-                refreshDevices(data.message);
+                // adb didn't exist at all until this just finished, so the
+                // settle-poll from mount had nothing to find yet and gave up
+                // early -- this is the first real chance to detect anything,
+                // and a single refresh can still miss a device that's mid
+                // reconnect, same as at mount or right after pairing.
+                refreshDevicesUntilSettled(data.message);
                 checkScrcpy(); // Re-check binary status
             }
         });
@@ -279,10 +285,12 @@ export function useScrcpy() {
         localStorage.removeItem('scrcpy_history');
     };
 
-    const refreshDevices = async (customPath?: string, silent: boolean = false) => {
-        if (isRefreshing) return;
-        setIsRefreshing(true);
-
+    // Does the actual device + mDNS fetch. Split out from `refreshDevices` so
+    // `refreshDevicesUntilSettled` can drive several of these back to back
+    // under one continuous "syncing" state, instead of the isRefreshing flag
+    // (and the "Syncing..." label bound to it) flickering off and back on
+    // between each poll.
+    const fetchDevicesOnce = async (customPath?: string, silent: boolean = false) => {
         try {
             const res: any = await invoke('get_devices', { customPath: customPath || config.scrcpyPath });
             let newDevices: string[] = [];
@@ -313,8 +321,8 @@ export function useScrcpy() {
                 if (newDevices.length > 0 && !activeDevice) {
                     setActiveDevice(newDevices[0]);
                 }
-            } else {
-                setLogs(prev => [...prev.slice(-100), t('logs.discoveryError', { error: res.error })]);
+            } else if (!silent) {
+                setLogs(prev => [...prev.slice(-100), t('logs.discoveryError', { error: res.message })]);
             }
 
             // Fetch wireless devices broadcasting on the network via mDNS
@@ -327,6 +335,7 @@ export function useScrcpy() {
                     // click on either into the pairing modal, code-ready or not.
                     const parsedMdns = (mdnsRes.services as any[]).filter(s => s.service && (s.service.includes('_adb-tls-connect') || s.service.includes('_adb-tls-pairing')));
                     setMdnsDevices(parsedMdns);
+                    mdnsDevicesRef.current = parsedMdns;
 
                     // No client-side auto-connect: adb already reconnects paired
                     // devices it rediscovers over mDNS from its own keystore
@@ -338,6 +347,7 @@ export function useScrcpy() {
                 } else if (mdnsRes && mdnsRes.error) {
                     console.warn("[ADB MDNS] Failed to get mdns devices:", mdnsRes.message);
                     setMdnsDevices([]);
+                    mdnsDevicesRef.current = [];
                 }
             } catch (mdnsErr) {
                 console.error("Failed to query mDNS devices:", mdnsErr);
@@ -345,6 +355,47 @@ export function useScrcpy() {
         } catch (e) {
             console.error(e);
             setLogs(prev => [...prev.slice(-100), t('logs.errorRefreshingDevices', { error: String(e) })]);
+        }
+    };
+
+    const refreshDevices = async (customPath?: string, silent: boolean = false) => {
+        if (isRefreshing) return;
+        setIsRefreshing(true);
+        try {
+            await fetchDevicesOnce(customPath, silent);
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
+
+    // adb reconnects a known device from its own keystore once it resolves it
+    // again over mDNS, but that isn't instant -- right after this app starts
+    // (especially right after an `adb kill-server`, where adb's own mDNS scan
+    // hasn't found anything yet either) or right after pairing succeeds, a
+    // single refresh can still miss it entirely: the very first pass can come
+    // back with no mDNS record at all, not just an unconnected one, so
+    // waiting only for a *known* unconnected device would already be too
+    // late to start watching. Instead, keep refreshing until two consecutive
+    // reads agree (devices and mDNS entries both unchanged) -- that catches
+    // the mDNS scan lagging behind, the reconnect handshake lagging behind
+    // that, or nothing happening at all (which just settles immediately).
+    //
+    // isRefreshing (and the "Syncing..." label bound to it) is held for the
+    // whole poll, not just each individual pass -- otherwise it flips back to
+    // "Refresh" between polls while still silently waiting, then a device can
+    // pop into the hub several seconds after the button already looks idle.
+    const refreshDevicesUntilSettled = async (customPath?: string, attempts: number = 8, delayMs: number = 2000) => {
+        if (isRefreshing) return;
+        setIsRefreshing(true);
+        try {
+            let prevSnapshot = '';
+            for (let i = 0; i <= attempts; i++) {
+                await fetchDevicesOnce(customPath, true);
+                const snapshot = JSON.stringify([prevDevicesRef.current, mdnsDevicesRef.current]);
+                if (snapshot === prevSnapshot) return;
+                prevSnapshot = snapshot;
+                if (i < attempts) await new Promise(r => setTimeout(r, delayMs));
+            }
         } finally {
             setIsRefreshing(false);
         }
@@ -425,7 +476,7 @@ export function useScrcpy() {
             const res: any = await invoke('adb_pair', { ip, code, customPath: customPath || config.scrcpyPath });
             if (res.success) {
                 setLogs(prev => [...prev.slice(-100), t('logs.successfullyPaired', { ip })]);
-                await refreshDevices(customPath, true);
+                await refreshDevicesUntilSettled(customPath);
             } else {
                 setLogs(prev => {
                     const msgs = [t('logs.pairingFailed', { message: String(res.message) })];
@@ -599,6 +650,7 @@ export function useScrcpy() {
         downloadProgress,
         status,
         refreshDevices,
+        refreshDevicesUntilSettled,
         runScrcpy,
         stopScrcpy,
         downloadScrcpy,

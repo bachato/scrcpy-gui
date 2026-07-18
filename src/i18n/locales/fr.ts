@@ -80,7 +80,6 @@ export const fr: Translations = {
         wirelessSetupTipWirelessDebugging: 'Débogage Sans Fil',
         wirelessSetupTipTextAfter: '.',
         ipConnect: 'Connexion IP',
-        auto: 'Auto',
         ipPlaceholder: '192.168.x.x:5555',
         connect: 'Connecter',
         connecting: '...',
