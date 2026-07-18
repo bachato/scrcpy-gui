@@ -337,14 +337,20 @@ export function useScrcpy() {
             try {
                 const mdnsRes: any = await invoke('get_mdns_devices', { customPath: customPath || config.scrcpyPath });
                 if (mdnsRes && !mdnsRes.error && mdnsRes.services) {
-                    const parsedMdns = (mdnsRes.services as any[]).filter(s => s.service && s.service.includes('_adb-tls-connect'));
+                    // Keep both service kinds: "_adb-tls-connect" (ready to
+                    // connect) and "_adb-tls-pairing" (a device sitting on the
+                    // "Pair device with pairing code" screen). The UI routes a
+                    // click on either into the pairing modal, code-ready or not.
+                    const parsedMdns = (mdnsRes.services as any[]).filter(s => s.service && (s.service.includes('_adb-tls-connect') || s.service.includes('_adb-tls-pairing')));
                     setMdnsDevices(parsedMdns);
 
                     // Auto-connect to discovered but unconnected devices if option is enabled
                     if (isAutoConnect) {
                         for (const dev of parsedMdns) {
                             const addr = dev.address;
-                            if (!isMdnsDeviceConnected(dev, newDevices) && !attemptedConnectionsRef.current.has(addr)) {
+                            // Only a "_adb-tls-connect" service can be connected to;
+                            // a pairing service needs the code, never `adb connect`.
+                            if (dev.service.includes('_adb-tls-connect') && !isMdnsDeviceConnected(dev, newDevices) && !attemptedConnectionsRef.current.has(addr)) {
                                 attemptedConnectionsRef.current.add(addr);
                                 setLogs(prev => [...prev.slice(-100), `[Auto-Connect] Discovered wireless device at ${addr}, connecting...`]);
 
