@@ -325,6 +325,7 @@ export default function Sidebar({
                                         {historyDevices.map((ip, idx) => (
                                             <button
                                                 key={idx}
+                                                disabled={isRefreshing}
                                                 onClick={() => {
                                                     setConnectIp(ip);
                                                     handleConnect(ip);

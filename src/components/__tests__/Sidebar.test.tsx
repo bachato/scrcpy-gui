@@ -154,6 +154,18 @@ describe('Sidebar Component', () => {
         expect(screen.getAllByPlaceholderText('Pairing Code')).toHaveLength(2);
     });
 
+    it('disables the Recent Devices connect button while a refresh is already in flight', () => {
+        render(<Sidebar {...mockProps} historyDevices={['192.168.1.128:5555']} isRefreshing={true} />);
+
+        fireEvent.click(screen.getByText('Wireless'));
+        // A rapid second click before the first connect attempt settles fired
+        // a duplicate `adb connect` -- disabling this button while one is
+        // already in flight, like the other two connect-triggering buttons
+        // already do, is what prevents that.
+        const connectBtn = screen.getByText('192.168.1.128:5555').closest('button');
+        expect(connectBtn).toBeDisabled();
+    });
+
     it('shows a clean label for an mDNS wireless-debugging serial, but keeps the full serial for selection', () => {
         const mdnsSerial = 'adb-VWGE5XZHOBAIAAJN-thoiAU._adb-tls-connect._tcp';
         const onSelectDevice = vi.fn();
