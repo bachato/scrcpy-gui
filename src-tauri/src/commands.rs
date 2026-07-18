@@ -168,12 +168,50 @@ pub async fn check_scrcpy(custom_path: Option<String>) -> serde_json::Value {
     }
 }
 
+/// ADB device states that can appear in the second column of `adb devices -l`
+/// output. Only "device" means the device is connected and authorized; every
+/// other state (offline, mid-pairing, unauthorized, ...) is not usable yet.
+const KNOWN_ADB_STATES: &[&str] = &[
+    "device",
+    "offline",
+    "unauthorized",
+    "authorizing",
+    "unknown",
+    "bootloader",
+    "recovery",
+    "sideload",
+    "host",
+    "connecting",
+];
+
+/// Parses one data line of `adb devices -l` output into `(serial, state)`.
+///
+/// The serial and state are whitespace-separated, but the serial itself can
+/// contain a space: an mDNS wireless-debugging serial in "conflict" form
+/// (when two devices would otherwise resolve to the same mDNS name) looks
+/// like `adb-SERIAL (2)._adb-tls-connect._tcp`. Splitting on the first
+/// whitespace run, or assuming a specific serial shape, would misparse that
+/// case. Instead this finds the first token that is a *known ADB state* and
+/// treats everything before it as the serial, so it corresponds to the state
+/// ADB actually reports, regardless of the serial's shape (USB ID, IP:port,
+/// or mDNS name). Any further `-l` fields (`product:... model:...
+/// transport_id:...`) are simply ignored.
+fn parse_adb_device_line(line: &str) -> Option<(String, String)> {
+    let tokens: Vec<&str> = line.split_whitespace().collect();
+    let state_idx = tokens.iter().position(|t| KNOWN_ADB_STATES.contains(t))?;
+    if state_idx == 0 {
+        return None; // no serial before the state
+    }
+    Some((tokens[..state_idx].join(" "), tokens[state_idx].to_string()))
+}
+
 #[tauri::command]
 pub async fn get_devices(custom_path: Option<String>) -> serde_json::Value {
     let adb_path = get_binary_path("adb", custom_path);
-    
+
     let output = create_command(&adb_path)
         .arg("devices")
+        .arg("-l")
         .output()
         .await;
 
@@ -183,11 +221,11 @@ pub async fn get_devices(custom_path: Option<String>) -> serde_json::Value {
                  let out_str = String::from_utf8_lossy(&o.stdout);
                  let devices: Vec<String> = out_str.lines()
                     .skip(1) // Skip "List of devices attached"
-                    .filter(|l| l.contains("\tdevice"))
-                    .map(|l| l.split('\t').next().unwrap_or("").trim().to_string())
-                    .filter(|s| !s.is_empty() && !s.contains("._tcp") && !s.contains("._udp"))
+                    .filter_map(parse_adb_device_line)
+                    .filter(|(_, state)| state == "device")
+                    .map(|(serial, _)| serial)
                     .collect();
-                 
+
                  json!({ "error": false, "devices": devices })
              } else {
                  json!({ "error": true, "message": "ADB returned error" })
@@ -244,10 +282,13 @@ pub async fn get_mdns_devices(custom_path: Option<String>) -> serde_json::Value 
 }
 
 #[tauri::command]
-pub async fn adb_connect(window: Window, ip: String, custom_path: Option<String>) -> Result<serde_json::Value, String> {
+pub async fn adb_connect(window: Window, ip: String, custom_path: Option<String>, silent: Option<bool>) -> Result<serde_json::Value, String> {
+    let silent = silent.unwrap_or(false);
     let adb_path = get_binary_path("adb", custom_path);
-    let _ = window.emit("scrcpy-log", format!("[SYSTEM] Attempting wireless connection to {}...", ip));
-    
+    if !silent {
+        let _ = window.emit("scrcpy-log", format!("[SYSTEM] Attempting wireless connection to {}...", ip));
+    }
+
     let child = create_command(&adb_path)
         .arg("connect")
         .arg(&ip)
@@ -263,17 +304,21 @@ pub async fn adb_connect(window: Window, ip: String, custom_path: Option<String>
         Ok(Ok(output)) => {
             let out_text = String::from_utf8_lossy(&output.stdout).trim().to_string();
             let err_text = String::from_utf8_lossy(&output.stderr).trim().to_string();
-            
-            // Log everything to terminal for visibility
-            if !out_text.is_empty() { let _ = window.emit("scrcpy-log", format!("[ADB] {}", out_text)); }
-            if !err_text.is_empty() { let _ = window.emit("scrcpy-log", format!("[ADB ERROR] {}", err_text)); }
+
+            if !silent {
+                // Log everything to terminal for visibility
+                if !out_text.is_empty() { let _ = window.emit("scrcpy-log", format!("[ADB] {}", out_text)); }
+                if !err_text.is_empty() { let _ = window.emit("scrcpy-log", format!("[ADB ERROR] {}", err_text)); }
+            }
 
             let success = output.status.success() && !out_text.contains("cannot connect") && !out_text.contains("failed");
             Ok(json!({ "success": success, "message": if out_text.is_empty() { err_text } else { out_text } }))
         }
         Ok(Err(e)) => Err(e.to_string()),
         Err(_) => {
-            let _ = window.emit("scrcpy-log", format!("[SYSTEM] Connection to {} timed out after 5s.", ip));
+            if !silent {
+                let _ = window.emit("scrcpy-log", format!("[SYSTEM] Connection to {} timed out after 5s.", ip));
+            }
             Ok(json!({ "success": false, "message": "connection timed out" }))
         }
     }
@@ -1277,6 +1322,108 @@ mod tests {
         assert!(!is_audio_codec_error("video encoder error"));
         assert!(!is_audio_codec_error("permission issue"));
         assert!(!is_audio_codec_error("INFO Audio codec selected: opus"));
+    }
+
+    #[test]
+    fn test_parse_adb_device_line_usb_serial() {
+        assert_eq!(
+            parse_adb_device_line("ZY22MGW35T device"),
+            Some(("ZY22MGW35T".to_string(), "device".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_parse_adb_device_line_tcpip_serial() {
+        assert_eq!(
+            parse_adb_device_line("192.168.1.50:5555 device"),
+            Some(("192.168.1.50:5555".to_string(), "device".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_parse_adb_device_line_mdns_serial() {
+        assert_eq!(
+            parse_adb_device_line("adb-ZY22MGW35T-Z3uXXq._adb-tls-connect._tcp device"),
+            Some((
+                "adb-ZY22MGW35T-Z3uXXq._adb-tls-connect._tcp".to_string(),
+                "device".to_string()
+            ))
+        );
+    }
+
+    #[test]
+    fn test_parse_adb_device_line_mdns_conflict_serial_with_space() {
+        // mDNS conflict resolution appends " (2)" inside the serial itself, so
+        // the line has a space that is NOT the serial/state separator.
+        assert_eq!(
+            parse_adb_device_line("adb-ZY22MGW35T-Z3uXXq (2)._adb-tls-connect._tcp device"),
+            Some((
+                "adb-ZY22MGW35T-Z3uXXq (2)._adb-tls-connect._tcp".to_string(),
+                "device".to_string()
+            ))
+        );
+    }
+
+    #[test]
+    fn test_parse_adb_device_line_ignores_trailing_l_fields() {
+        // `adb devices -l` appends product/model/transport_id fields after the
+        // state; they must not affect the parsed serial or state.
+        assert_eq!(
+            parse_adb_device_line(
+                "ZY22MGW35T device usb:1-1 product:foo model:bar device:baz transport_id:1"
+            ),
+            Some(("ZY22MGW35T".to_string(), "device".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_parse_adb_device_line_offline_and_unauthorized() {
+        assert_eq!(
+            parse_adb_device_line("ZY22MGW35T offline"),
+            Some(("ZY22MGW35T".to_string(), "offline".to_string()))
+        );
+        assert_eq!(
+            parse_adb_device_line("192.168.1.50:5555 unauthorized"),
+            Some(("192.168.1.50:5555".to_string(), "unauthorized".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_parse_adb_device_line_unparsable_returns_none() {
+        assert_eq!(parse_adb_device_line(""), None);
+        assert_eq!(parse_adb_device_line("List of devices attached"), None);
+    }
+
+    #[test]
+    fn test_get_devices_filtering_keeps_only_device_state() {
+        // Mirrors the filter chain in get_devices: only the exact "device"
+        // state is kept, regardless of serial shape, including mDNS wireless
+        // debugging serials (._tcp/._udp) that must no longer be excluded.
+        let output = "List of devices attached\n\
+             ZY22MGW35T device usb:1-1 product:foo model:bar transport_id:1\n\
+             192.168.1.50:5555 device product:foo model:bar transport_id:2\n\
+             adb-ZY22MGW35T-Z3uXXq._adb-tls-connect._tcp device product:foo transport_id:3\n\
+             adb-ZY22MGW35T-Z3uXXq (2)._adb-tls-connect._tcp device product:foo transport_id:4\n\
+             emulator-5554 offline\n\
+             0123456789ABCDEF unauthorized\n";
+
+        let devices: Vec<String> = output
+            .lines()
+            .skip(1)
+            .filter_map(parse_adb_device_line)
+            .filter(|(_, state)| state == "device")
+            .map(|(serial, _)| serial)
+            .collect();
+
+        assert_eq!(
+            devices,
+            vec![
+                "ZY22MGW35T".to_string(),
+                "192.168.1.50:5555".to_string(),
+                "adb-ZY22MGW35T-Z3uXXq._adb-tls-connect._tcp".to_string(),
+                "adb-ZY22MGW35T-Z3uXXq (2)._adb-tls-connect._tcp".to_string(),
+            ]
+        );
     }
 }
 

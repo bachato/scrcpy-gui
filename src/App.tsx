@@ -23,6 +23,7 @@ function App() {
     activeDevice,
     setActiveDevice,
     refreshDevices,
+    refreshDevicesUntilSettled,
     runScrcpy,
     stopScrcpy,
     downloadScrcpy,
@@ -35,8 +36,6 @@ function App() {
     connectDevice,
     listScrcpyOptions,
     runTerminalCommand,
-    isAutoConnect,
-    toggleAutoConnect,
     runningDevices,
     isRefreshing,
     sessionRunning,
@@ -122,9 +121,12 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Initial check (once on mount) - Silent to avoid log clatter
+    // Initial check (once on mount) - Silent to avoid log clatter. adb's own
+    // reconnect of an already-paired device can lag a beat behind the app
+    // opening, so keep checking briefly instead of a single refresh that
+    // might land before adb has caught up.
     checkScrcpy(config.scrcpyPath);
-    refreshDevices(config.scrcpyPath, true);
+    refreshDevicesUntilSettled(config.scrcpyPath);
   }, []);
 
   useEffect(() => {
@@ -327,8 +329,6 @@ function App() {
                     onSelectDevice={setActiveDevice}
                     onPair={pairDevice}
                     onConnect={connectDevice}
-                    isAutoConnect={isAutoConnect}
-                    onToggleAuto={toggleAutoConnect}
                     isRefreshing={isRefreshing}
                     onFilePush={handleFileBrowse}
                     historyDevices={historyDevices}
