@@ -1,7 +1,7 @@
 import React from 'react';
 import { Smartphone, RefreshCw, Usb, Wifi, UploadCloud, Zap } from 'lucide-react';
 import { useI18n } from '../i18n';
-import { MdnsDevice } from '../hooks/useScrcpy';
+import { MdnsDevice, isMdnsDeviceConnected } from '../hooks/useScrcpy';
 
 // mDNS wireless-debugging serials look like
 // "adb-<serial>-<random>._adb-tls-connect._tcp" (optionally with an mDNS
@@ -210,14 +210,14 @@ export default function Sidebar({
                             </div>
 
                             {/* Discovered Devices (mDNS) */}
-                            {mdnsDevices && mdnsDevices.filter(dev => !devices.includes(dev.address)).length > 0 && (
+                            {mdnsDevices && mdnsDevices.filter(dev => !isMdnsDeviceConnected(dev, devices)).length > 0 && (
                                 <div className="space-y-3 pt-1">
                                     <div className="flex items-center justify-between border-b border-zinc-800/50 pb-1.5">
                                         <span className="text-[9px] font-black uppercase text-primary/60 tracking-widest">{t('sidebar.discoveredDevices')}</span>
                                     </div>
                                     <div className="space-y-2">
                                         {mdnsDevices
-                                            .filter(dev => !devices.includes(dev.address))
+                                            .filter(dev => !isMdnsDeviceConnected(dev, devices))
                                             .map((dev, idx) => (
                                                 <button
                                                     key={idx}

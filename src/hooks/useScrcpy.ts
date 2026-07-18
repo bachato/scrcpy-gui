@@ -20,6 +20,18 @@ export interface MdnsDevice {
     address: string;
 }
 
+/** Whether an mDNS-discovered device is already present in `devices`.
+ *  A device connected via a plain `adb connect ip:port` is tracked under that
+ *  same "ip:port" serial, but one already connected through wireless
+ *  debugging's mDNS pairing (e.g. paired via Android Studio, not through this
+ *  app) is tracked under its "adb-<name>._adb-tls-connect._tcp" serial
+ *  instead -- which never matches `dev.address`. Checking both forms is what
+ *  keeps an already-connected device from being listed a second time under
+ *  "Discovered Devices", or auto-(re)connected by IP. */
+export function isMdnsDeviceConnected(dev: MdnsDevice, devices: string[]): boolean {
+    return devices.includes(dev.address) || devices.some(d => d.includes(dev.name));
+}
+
 export interface ScrcpyConfig {
     device: string;
     sessionMode: string;
@@ -332,7 +344,7 @@ export function useScrcpy() {
                     if (isAutoConnect) {
                         for (const dev of parsedMdns) {
                             const addr = dev.address;
-                            if (!newDevices.includes(addr) && !attemptedConnectionsRef.current.has(addr)) {
+                            if (!isMdnsDeviceConnected(dev, newDevices) && !attemptedConnectionsRef.current.has(addr)) {
                                 attemptedConnectionsRef.current.add(addr);
                                 setLogs(prev => [...prev.slice(-100), `[Auto-Connect] Discovered wireless device at ${addr}, connecting...`]);
 
