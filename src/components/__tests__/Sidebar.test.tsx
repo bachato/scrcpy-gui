@@ -14,8 +14,6 @@ describe('Sidebar Component', () => {
         onConnect: vi.fn(),
         historyDevices: [],
         onFilePush: vi.fn(),
-        isAutoConnect: false,
-        onToggleAuto: vi.fn(),
         isRefreshing: false
     };
 

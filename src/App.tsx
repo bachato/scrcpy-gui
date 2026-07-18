@@ -35,8 +35,6 @@ function App() {
     connectDevice,
     listScrcpyOptions,
     runTerminalCommand,
-    isAutoConnect,
-    toggleAutoConnect,
     runningDevices,
     isRefreshing,
     sessionRunning,
@@ -327,8 +325,6 @@ function App() {
                     onSelectDevice={setActiveDevice}
                     onPair={pairDevice}
                     onConnect={connectDevice}
-                    isAutoConnect={isAutoConnect}
-                    onToggleAuto={toggleAutoConnect}
                     isRefreshing={isRefreshing}
                     onFilePush={handleFileBrowse}
                     historyDevices={historyDevices}

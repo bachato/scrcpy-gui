@@ -29,8 +29,6 @@ export interface SidebarProps {
     onSelectDevice: (d: string) => void;
     onPair: (ip: string, code: string) => Promise<any>;
     onConnect: (ip: string) => Promise<any>;
-    isAutoConnect: boolean;
-    onToggleAuto: (val: boolean) => void;
     isRefreshing?: boolean;
     onFilePush: () => void;
     // History props
@@ -48,8 +46,6 @@ export default function Sidebar({
     onSelectDevice,
     onPair,
     onConnect,
-    isAutoConnect,
-    onToggleAuto,
     isRefreshing,
     onFilePush,
     historyDevices = [],
@@ -253,12 +249,6 @@ export default function Sidebar({
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between border-b border-zinc-800/50 pb-1.5">
                                     <span className="text-[9px] font-black uppercase text-zinc-500 tracking-widest">{t('sidebar.ipConnect')}</span>
-                                    <div className="flex items-center gap-2 group cursor-pointer" onClick={() => onToggleAuto(!isAutoConnect)}>
-                                        <div className={`w-3 h-3 rounded-[2px] border flex items-center justify-center transition-colors ${isAutoConnect ? 'bg-primary border-primary' : 'border-zinc-700 group-hover:border-zinc-500'}`}>
-                                            {isAutoConnect && <div className="w-1.5 h-1.5 bg-black rounded-[0.5px]" />}
-                                        </div>
-                                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-tighter">{t('sidebar.auto')}</span>
-                                    </div>
                                 </div>
 
                                 <div className="flex gap-2">

@@ -80,7 +80,6 @@ export function useScrcpy() {
     const [downloadProgress, setDownloadProgress] = useState<number>(0);
     const [isDownloading, setIsDownloading] = useState(false);
     const [scrcpyStatus, setScrcpyStatus] = useState<{ found: boolean, message: string }>({ found: false, message: t('common.loading') });
-    const [isAutoConnect, setIsAutoConnect] = useState<boolean>(true);
     const [isInitialized, setIsInitialized] = useState(false);
     const [runningDevices, setRunningDevices] = useState<string[]>([]);
     const [defaultRecordPath, setDefaultRecordPath] = useState<string>("");
@@ -93,7 +92,6 @@ export function useScrcpy() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
     const [mdnsDevices, setMdnsDevices] = useState<MdnsDevice[]>([]);
-    const attemptedConnectionsRef = useRef<Set<string>>(new Set());
     const [theme, setTheme] = useState("ultraviolet");
     const [colorMode, setColorModeState] = useState<'light' | 'dark' | 'system'>(() => {
         try {
@@ -131,11 +129,6 @@ export function useScrcpy() {
     const prevDevicesRef = useRef<string[]>([]);
 
     useEffect(() => {
-
-        const savedAuto = localStorage.getItem('scrcpy_auto_connect');
-        if (savedAuto !== null) {
-            setIsAutoConnect(savedAuto === 'true');
-        }
 
         const savedTheme = localStorage.getItem('scrcpy_theme');
         if (savedTheme) {
@@ -223,11 +216,6 @@ export function useScrcpy() {
 
 
 
-    const toggleAutoConnect = (val: boolean) => {
-        setIsAutoConnect(val);
-        localStorage.setItem('scrcpy_auto_connect', val.toString());
-    };
-
     useEffect(() => {
         const unlistenLog = listen<string>('scrcpy-log', (event) => {
             const newLines = event.payload.split('\n');
@@ -295,10 +283,6 @@ export function useScrcpy() {
         if (isRefreshing) return;
         setIsRefreshing(true);
 
-        if (!silent) {
-            attemptedConnectionsRef.current.clear();
-        }
-
         try {
             const res: any = await invoke('get_devices', { customPath: customPath || config.scrcpyPath });
             let newDevices: string[] = [];
@@ -344,33 +328,13 @@ export function useScrcpy() {
                     const parsedMdns = (mdnsRes.services as any[]).filter(s => s.service && (s.service.includes('_adb-tls-connect') || s.service.includes('_adb-tls-pairing')));
                     setMdnsDevices(parsedMdns);
 
-                    // Auto-connect to discovered but unconnected devices if option is enabled
-                    if (isAutoConnect) {
-                        for (const dev of parsedMdns) {
-                            const addr = dev.address;
-                            // Only a "_adb-tls-connect" service can be connected to;
-                            // a pairing service needs the code, never `adb connect`.
-                            if (dev.service.includes('_adb-tls-connect') && !isMdnsDeviceConnected(dev, newDevices) && !attemptedConnectionsRef.current.has(addr)) {
-                                attemptedConnectionsRef.current.add(addr);
-                                setLogs(prev => [...prev.slice(-100), `[Auto-Connect] Discovered wireless device at ${addr}, connecting...`]);
-
-                                invoke('adb_connect', { ip: addr, customPath: customPath || config.scrcpyPath })
-                                    .then((connectRes: any) => {
-                                        if (connectRes && connectRes.success) {
-                                            setLogs(prev => [...prev.slice(-100), `[Auto-Connect] Successfully connected to ${addr}`]);
-                                            setTimeout(() => {
-                                                refreshDevices(customPath || config.scrcpyPath, true);
-                                            }, 1000);
-                                        } else {
-                                            setLogs(prev => [...prev.slice(-100), `[Auto-Connect] Failed to connect to ${addr}: ${connectRes?.message || 'unknown error'}`]);
-                                        }
-                                    })
-                                    .catch(err => {
-                                        setLogs(prev => [...prev.slice(-100), `[Auto-Connect] Error connecting to ${addr}: ${String(err)}`]);
-                                    });
-                            }
-                        }
-                    }
+                    // No client-side auto-connect: adb already reconnects paired
+                    // devices it rediscovers over mDNS from its own keystore
+                    // (transport_mdns: "Don't try to auto-connect if not in the
+                    // keystore"). Once adb reconnects one, get_devices surfaces it
+                    // in the hub. Racing it with our own `adb connect` only opened
+                    // a duplicate ip:port session for the same device; discovery
+                    // here is display-only, plus the pairing modal.
                 } else if (mdnsRes && mdnsRes.error) {
                     console.warn("[ADB MDNS] Failed to get mdns devices:", mdnsRes.message);
                     setMdnsDevices([]);
@@ -646,8 +610,6 @@ export function useScrcpy() {
         connectDevice,
         listScrcpyOptions,
         runTerminalCommand,
-        isAutoConnect,
-        toggleAutoConnect,
         runningDevices,
         defaultRecordPath,
         detectedCameras,
